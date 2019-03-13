@@ -47,6 +47,14 @@ _wtmux_auto()
     fi
 }
 
+_wtmux_killall()
+{
+    tmux ls |
+        grep : |
+        cut -d. -f1 |
+        awk '{print substr($1, 0, length($1)-1)}' |
+        xargs kill
+}
 
 
 _wtmux()
@@ -55,6 +63,10 @@ _wtmux()
     _wtmux__ret=0
 
     case "$1" in
+        killall)
+            _wtmux_killall
+            _wtmux__ret="$?"
+            ;;
         *) _wtmux_auto "$@"
            _wtmux__ret="$?"
            ;;
