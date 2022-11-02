@@ -46,17 +46,11 @@ _wtmux_auto()
 
     tmux_session_name_for "$1"
 
-    if ! tmux_session_exists "$tmux_session_name_for"; then
-        echo 'DAEMON' >> /tmp/debug
-            TMUX='' tmux new-session -Ads "$tmux_session_name_for"
-    fi
-
+    TMUX='' tmux new-session -Ads "$tmux_session_name_for"
     if not_in_tmux; then
-        echo 'client not in' >> /tmp/debug
-         tmux attach -t "$tmux_session_name_for"
-     else
-         echo 'client in ' >> /tmp/debug
-        tmux switch-client -t "$tmux_session_name_for"
+        tmux attach -t "$tmux_session_name_for"
+    else
+         tmux switch-client -t "$tmux_session_name_for"
     fi
 }
 
