@@ -11,6 +11,11 @@ in_tmux()
     [ -n "$TMUX" ]
 }
 
+daemonize()
+{
+    :
+}
+
 not_in_tmux()
 {
     ! in_tmux
@@ -19,16 +24,20 @@ not_in_tmux()
 tmux_session_exists()
 {
     [ -z "$1" ] && return 1
-    tmux list-sessions | sed -E 's/:.*$//' | grep -q "^${1}$"
+    tmux has-session -t "$1"
 }
 
 tmux_session_name_for()
 {
     tmux_session_name_for__base="$1"
     if [ -z "$tmux_session_name_for__base" ]; then
-        tmux_session_name_for__base="${PWD##*/}"
+        if [ "$PWD" = "$HOME" ]; then
+            tmux_session_name_for__base="home"
+        else
+            tmux_session_name_for__base="${PWD##*/}"
+        fi
     fi
-    tmux_session_name_for="$(echo $tmux_session_name_for__base | tr . _)"
+    tmux_session_name_for="$(echo $tmux_session_name_for__base | tr :. _)"
 }
 
 _wtmux_auto()
@@ -37,23 +46,24 @@ _wtmux_auto()
 
     tmux_session_name_for "$1"
 
-    if not_in_tmux; then
-        tmux new-session -As "$tmux_session_name_for"
-    else
-        if ! tmux_session_exists "$tmux_session_name_for"; then
+    if ! tmux_session_exists "$tmux_session_name_for"; then
+        echo 'DAEMON' >> /tmp/debug
             TMUX='' tmux new-session -Ads "$tmux_session_name_for"
-        fi
+    fi
+
+    if not_in_tmux; then
+        echo 'client not in' >> /tmp/debug
+         tmux attach -t "$tmux_session_name_for"
+     else
+         echo 'client in ' >> /tmp/debug
         tmux switch-client -t "$tmux_session_name_for"
     fi
 }
 
 _wtmux_killall()
 {
-    tmux ls |
-        grep : |
-        cut -d. -f1 |
-        awk '{print substr($1, 0, length($1)-1)}' |
-        xargs kill
+    tmux kill-session -a
+    tmux kill-session -t $(tmux display-message -p '#S')
 }
 
 
