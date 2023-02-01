@@ -1,6 +1,9 @@
 #!/bin/sh
 # -*- mode: sh -*-
 
+TMUX_CONF_DIR="${TMUX_CONF_DIR:-$HOME/.tmux}"
+
+
 has_tmux()
 {
     which tmux >/dev/null 2>/dev/null
@@ -24,7 +27,7 @@ not_in_tmux()
 tmux_session_exists()
 {
     [ -z "$1" ] && return 1
-    tmux has-session -t "$1"
+    tmux has-session -t "$1" 2>/dev/null
 }
 
 tmux_session_name_for()
@@ -40,14 +43,41 @@ tmux_session_name_for()
     tmux_session_name_for="$(echo $tmux_session_name_for__base | tr :. _)"
 }
 
+_wtmux_session()
+{
+    _wtmux_session__name="$1"
+    _wtmux_session__dir="${2:-$PWD}"
+    TMUX= tmux new-session -c "$_wtmux_session__dir" -s "$_wtmux_session__name" -d || return 1
+
+    if [ -r "$_wtmux_session__dir/.tmux" ]; then
+        _wtmux_session__environment=`cat "$_wtmux_session__dir/.tmux"`
+    else
+        _wtmux_session__environment="session.$_wtmux_session__name"
+    fi
+    _wtmux_environment "$_wtmux_session__environment" "$_wtmux_session__name"
+
+    return 0
+}
+
+_wtmux_environment()
+{
+    _wtmux_environment__name="$1"
+    _wtmux_environment__session="$2"
+
+    [ -z "$1" ] && return 0
+    if [ -r "$TMUX_CONF_DIR/environments/$_wtmux_environment__name" ]; then
+        "$TMUX_CONF_DIR/environments/$_wtmux_environment__name" "$_wtmux_environment__session"
+    fi
+}
+
 _wtmux_auto()
 {
     has_tmux || return 1
 
     tmux_session_name_for "$1"
 
-    tmux has-session -t "$tmux_session_name_for" ||
-        tmux new-session -d -s "$tmux_session_name_for" ||
+    tmux_session_exists "$tmux_session_name_for" ||
+        _wtmux_session "$tmux_session_name_for" ||
         return 1
     if not_in_tmux; then
         tmux attach -t "$tmux_session_name_for"
