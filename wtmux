@@ -46,7 +46,9 @@ _wtmux_auto()
 
     tmux_session_name_for "$1"
 
-    TMUX='' tmux new-session -Ads "$tmux_session_name_for"
+    tmux has-session -t "$tmux_session_name_for" ||
+        tmux new-session -d -s "$tmux_session_name_for" ||
+        return 1
     if not_in_tmux; then
         tmux attach -t "$tmux_session_name_for"
     else
