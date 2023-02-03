@@ -49,24 +49,23 @@ _wtmux_session()
     _wtmux_session__dir="${2:-$PWD}"
     TMUX= tmux new-session -c "$_wtmux_session__dir" -s "$_wtmux_session__name" -d || return 1
 
-    if [ -r "$_wtmux_session__dir/.tmux" ]; then
-        _wtmux_session__environment=`cat "$_wtmux_session__dir/.tmux"`
-    else
-        _wtmux_session__environment="session.$_wtmux_session__name"
+    _wtmux_session__layout=`cat "$_wtmux_session__dir/.tmux" 2>/dev/null`
+    if [ $? -ne 0 ]; then
+        _wtmux_session__layout="session.$_wtmux_session__name"
     fi
-    _wtmux_environment "$_wtmux_session__environment" "$_wtmux_session__name"
+    _wtmux_layout "$_wtmux_session__layout" "$_wtmux_session__name"
 
     return 0
 }
 
-_wtmux_environment()
+_wtmux_layout()
 {
-    _wtmux_environment__name="$1"
-    _wtmux_environment__session="$2"
+    _wtmux_layout__name="$1"
+    _wtmux_layout__session="$2"
 
     [ -z "$1" ] && return 0
-    if [ -r "$TMUX_CONF_DIR/environments/$_wtmux_environment__name" ]; then
-        "$TMUX_CONF_DIR/environments/$_wtmux_environment__name" "$_wtmux_environment__session"
+    if [ -r "$TMUX_CONF_DIR/layouts/$_wtmux_layout__name" ]; then
+        "$TMUX_CONF_DIR/layouts/$_wtmux_layout__name" "$_wtmux_layout__session"
     fi
 }
 
@@ -99,13 +98,22 @@ _wtmux()
     _wtmux__ret=0
 
     case "$1" in
+        init)
+            if not in_tmux; then
+                shift
+                _wtmux_auto "$@"
+                _wtmux__ret="$?"
+            fi
+            ;;
         killall)
-            _wtmux_killall
+            shift
+            _wtmux_killall "$@"
             _wtmux__ret="$?"
             ;;
-        *) _wtmux_auto "$@"
-           _wtmux__ret="$?"
-           ;;
+        *)
+            _wtmux_auto "$@"
+            _wtmux__ret="$?"
+            ;;
     esac
 
     return $_wtmux__ret
