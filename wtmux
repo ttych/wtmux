@@ -98,7 +98,7 @@ _wtmux()
     _wtmux__ret=0
 
     case "$1" in
-        init)
+        _init_)
             if not in_tmux; then
                 shift
                 _wtmux_auto "$@"
