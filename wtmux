@@ -75,7 +75,7 @@ _wtmux_auto()
 
     tmux_session_name_for "$1"
 
-    tmux_session_exists "$tmux_session_name_for" ||
+    tmux_session_exists "=$tmux_session_name_for" ||
         _wtmux_session "$tmux_session_name_for" ||
         return 1
     if not_in_tmux; then
